@@ -13,6 +13,7 @@
 from enlace import *
 import time
 import numpy as np
+import sys
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -22,7 +23,7 @@ import numpy as np
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM11"                  # Windows(variacao de)
+serialName = "COM3"                  # Windows(variacao de)
 
 
 def main():
@@ -38,39 +39,44 @@ def main():
         #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
         print("Abriu a comunicação")
         
-           
-                  
         #aqui você deverá gerar os dados a serem transmitidos. 
         #seus dados a serem transmitidos são um array bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
-        
+        imgR = "./imgs/gray.jpg"
+        imgW = "./imgs/gray_copy.jpg"
+
+        print(f'Abrindo a imagem {imgR}')
+        print('--'*30)
+
         #txBuffer = imagem em bytes!
-        txBuffer = b'\x12\x13\xAA'  #isso é um array de bytes
-       
+        txBuffer = open(imgR, 'rb').read()
+
         print("meu array de bytes tem tamanho {}" .format(len(txBuffer)))
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
-       
-            
+        
         #finalmente vamos transmitir os todos. Para isso usamos a funçao sendData que é um método da camada enlace.
         #faça um print para avisar que a transmissão vai começar.
+        print("enviando dados ....")
         #tente entender como o método send funciona!
         #Cuidado! Apenas trasmita arrays de bytes!
-               
         
         com1.sendData(np.asarray(txBuffer))  #as array apenas como boa pratica para casos de ter uma outra forma de dados
-          
+
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
+
         txSize = com1.tx.getStatus()
         print('enviou = {}' .format(txSize))
         
         #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
         #Observe o que faz a rotina dentro do thread RX
         #print um aviso de que a recepção vai começar.
+
+        print("Recebendo dados ....")
         
         #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
         #Veja o que faz a funcao do enlaceRX  getBufferLen
-      
+
         #acesso aos bytes recebidos
         txLen = len(txBuffer)
         rxBuffer, nRx = com1.getData(txLen)
@@ -79,9 +85,12 @@ def main():
         for i in range(len(rxBuffer)):
             print("recebeu {}" .format(rxBuffer[i]))
         
+        print("Salvando a Imagem lida")
+        f = open(imgW, 'wb')
+        f.write(rxBuffer)
 
-            
-    
+        f.close()
+
         # Encerra comunicação
         print("-------------------------")
         print("Comunicação encerrada")
