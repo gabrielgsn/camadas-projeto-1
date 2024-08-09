@@ -42,8 +42,8 @@ def main():
         #aqui você deverá gerar os dados a serem transmitidos. 
         #seus dados a serem transmitidos são um array bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
-        imgR = "./imgs/gray.jpg"
-        imgW = "./imgs/gray_copy.jpg"
+        imgR = "./imgs/bmp.jpeg"
+        imgW = "./imgs/bmp_copy.jpeg"
 
         print(f'Abrindo a imagem {imgR}')
         print('--'*30)
@@ -64,7 +64,8 @@ def main():
 
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
-
+        time.sleep(2)
+        com1.tx.threadMutex = True
         txSize = com1.tx.getStatus()
         print('enviou = {}' .format(txSize))
         
