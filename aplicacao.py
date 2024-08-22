@@ -73,25 +73,38 @@ def main():
         # txBuffer = open(imgR, 'rb').read()
 
         # PROJETO 2
-        n = random.randint(5, 15)
+        # n = random.randint(5, 15)
+        n = 3
         min_ = round(-1*(10**38), 6)
         max_ = round(1*(10**38), 6)
+        
         txBuffer = [float_to_ieee_754(rounder(random.uniform(min_, max_))) for _ in range(n)]
+        total = sum([ieee_754_to_float(i) for i in txBuffer])  # Exclude stop byte from sum
+        print("Soma = {}" .format(total))
         print("meu array de bytes tem tamanho {}" .format(len(txBuffer)))
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
         
         #finalmente vamos transmitir os todos. Para isso usamos a funçao sendData que é um método da camada enlace.
         #faça um print para avisar que a transmissão vai começar.
         print("enviando dados ....")
-        #tente entender como o método send funciona!
-        #Cuidado! Apenas trasmita arrays de bytes!
+        start_byte = b'\x00\x00\x00\x00'
+        # check_byte = b'\x00\x00\x00\x00'
+        stop_byte = b'\xFF\xFF\xFF\xFF'
+        time.sleep(2)
+        # com1.sendData(np.asarray(start_byte))
+        time.sleep(2)
+        for i in txBuffer:
+            print(f'enviando: {ieee_754_to_float(i)}')
+            com1.sendData(np.asarray(i))
+            time.sleep(2)
+        com1.sendData(np.asarray(stop_byte))
         
-        com1.sendData(np.asarray(txBuffer))  #as array apenas como boa pratica para casos de ter uma outra forma de dados
-
+        
+        
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
-        while not com1.tx.threadMutex:
-            time.sleep(0.05)
+        time.sleep(2)
+        com1.tx.threadMutex = True
         txSize = com1.tx.getStatus()
         print('enviou = {}' .format(txSize))
         
