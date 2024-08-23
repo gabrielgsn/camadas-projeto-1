@@ -42,6 +42,7 @@ def rounder(x):
     num_complete = float(num + 'e' + exp)
     return num_complete
 
+
 def main():
     try:
         print("Iniciou o main")
@@ -73,13 +74,12 @@ def main():
         # txBuffer = open(imgR, 'rb').read()
 
         # PROJETO 2
-        # n = random.randint(5, 15)
-        n = 3
+        n = random.randint(5, 15)
         min_ = round(-1*(10**38), 6)
         max_ = round(1*(10**38), 6)
         
         txBuffer = [float_to_ieee_754(rounder(random.uniform(min_, max_))) for _ in range(n)]
-        total = sum([ieee_754_to_float(i) for i in txBuffer])  # Exclude stop byte from sum
+        total = sum([ieee_754_to_float(i) for i in txBuffer])
         print("Soma = {}" .format(total))
         print("meu array de bytes tem tamanho {}" .format(len(txBuffer)))
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
@@ -89,10 +89,10 @@ def main():
         print("enviando dados ....")
         # check_byte = b'\x00\x00\x00\x00'
         stop_byte = b'\xFF\xFF\xFF\xFF'
-        txBuffer.insert(3, stop_byte)
+        txBuffer.append(stop_byte)
         time.sleep(2)
         # com1.sendData(np.asarray(start_byte))
-        print('Enviando txBuffer: {}'.format(txBuffer))
+        # print('Enviando txBuffer: {}'.format(txBuffer))
         com1.sendData(np.asarray(txBuffer))
         
         
@@ -108,15 +108,40 @@ def main():
         #Observe o que faz a rotina dentro do thread RX
         #print um aviso de que a recepção vai começar.
 
-        # print("Recebendo dados ....")
+        print("Recebendo dados ....")
         
         # #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
         # #Veja o que faz a funcao do enlaceRX  getBufferLen
 
         # #acesso aos bytes recebidos
-        # txLen = len(txBuffer)
-        # rxBuffer, nRx = com1.getData(txLen)
-        # print("recebeu {} bytes" .format(len(rxBuffer)))
+        init_time = time.time()
+        
+
+        while True:
+            time_elapsed = time.time() - init_time
+            len_rxBuffer = com1.rx.getBufferLen()
+            if len_rxBuffer > 0:
+                rxBuffer, _ = com1.getData(4)
+                sum_received = (ieee_754_to_float(rxBuffer))
+                percent_error = abs((total - sum_received)*100 / total)
+                break
+            if time_elapsed > 5:
+                raise Exception("Tempo esgotado")
+
+        print('--------------------------------------')        
+        print("Soma Recebida {}" .format(sum_received))
+        print("Soma Real {}" .format(total))
+        print("Percentual de erro {}" .format(percent_error))
+        print('--------------------------------------')
+        if percent_error < 0.01:
+            print("Soma correta")
+        else:
+            print("Soma incorreta")
+
+
+
+
+
         
         # # PROJETO 1
         # # f = open(imgW, 'wb')
