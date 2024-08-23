@@ -12,7 +12,7 @@ import random
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM5"                  # Windows(variacao de)
+serialName = "COM3"                  # Windows(variacao de)
 
 def float_to_ieee_754(float_value):
     return struct.pack('f', float_value)
@@ -115,13 +115,20 @@ def main():
         while True:
             rxBuffer, nRx = com1.getData(4)
             if rxBuffer == stop_byte:
+                print("saiu do loop")
                 break
             sum += ieee_754_to_float(rxBuffer)
             recebido=ieee_754_to_float(rxBuffer)
             print("recebeu {}" .format(recebido))
 
-
+        
+        # time.sleep(10)
         print("soma = {}" .format(sum))
+        time.sleep(2)
+        sum_bytes = float_to_ieee_754(sum)
+        com1.sendData(np.asarray(sum_bytes))
+        print("enviou soma")
+
         # Encerra comunicação
         print("-------------------------")
         print("Comunicação encerrada")
