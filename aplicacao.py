@@ -24,7 +24,7 @@ import random
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM4"                  # Windows(variacao de)
+serialName = "COM3"                  # Windows(variacao de)
 
 def float_to_ieee_754(float_value):
     return struct.pack('f', float_value)
@@ -87,17 +87,13 @@ def main():
         #finalmente vamos transmitir os todos. Para isso usamos a funçao sendData que é um método da camada enlace.
         #faça um print para avisar que a transmissão vai começar.
         print("enviando dados ....")
-        start_byte = b'\x00\x00\x00\x00'
         # check_byte = b'\x00\x00\x00\x00'
         stop_byte = b'\xFF\xFF\xFF\xFF'
+        txBuffer.insert(3, stop_byte)
         time.sleep(2)
         # com1.sendData(np.asarray(start_byte))
-        time.sleep(2)
-        for i in txBuffer:
-            print(f'enviando: {ieee_754_to_float(i)}')
-            com1.sendData(np.asarray(i))
-            time.sleep(2)
-        com1.sendData(np.asarray(stop_byte))
+        print('Enviando txBuffer: {}'.format(txBuffer))
+        com1.sendData(np.asarray(txBuffer))
         
         
         
