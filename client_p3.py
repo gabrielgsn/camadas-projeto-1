@@ -26,32 +26,15 @@ import random
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 serialName = "COM4"                  # Windows(variacao de)
 
-def float_to_ieee_754(float_value):
-    return struct.pack('f', float_value)
-
-def ieee_754_to_float(ieee_value):
-    return struct.unpack('f', ieee_value)[0]
-
-def rounder(x):
-    '''
-    Função que arredonda o número x para 6 casas decimais e retorna o número em notação científica
-    '''
-    concat_list = (str(x)).split('e')
-    num = str(round(float(concat_list[0]), 6))
-    exp = concat_list[1]
-    num_complete = float(num + 'e' + exp)
-    return num_complete
-
-
 def main():
     try:
         print("Iniciou o main")
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
         com1 = enlace(serialName)
-        time.sleep(2)
-        com1.sendData(b'00')
-        time.sleep(1)
+        # time.sleep(2)
+        # com1.sendData(b'00')
+        # time.sleep(1)
 
 
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
@@ -63,38 +46,75 @@ def main():
         #seus dados a serem transmitidos são um array bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
 
-        # PROJETO 1
-        # imgR = "./imgs/bmp.jpeg"
-        # imgW = "./imgs/bmp_copy.jpeg"
+        # Projeto 3
 
-        # print(f'Abrindo a imagem {imgR}')
-        # print('--'*30)
+        # HANDSHAKE
+        head = b'\x00'*12
+        eop = b'\xFF\xFF\xFF'
+        txBuffer = head + eop
+        print("Enviando handshake...")
+        com1.sendData(txBuffer)
 
-        # #txBuffer = imagem em bytes!
-        # txBuffer = open(imgR, 'rb').read()
+        init_time = time.time()
+        while True:
+            len_rxBuffer = com1.rx.getBufferLen()
+            if len_rxBuffer > 0:
+                rxBuffer, _ = com1.getData(15)
+                if rxBuffer == txBuffer:
+                    print("Handshake recebido")
+                    break
+            if time.time() - init_time > 5:
+                continar = input("Servidor inativo. Tentar novamente? (S/N)")
+                if continar == 'N':
+                    print("Encerrando comunicação")
+                    com1.disable()
+                    sys.exit()
+                else:
+                    print("Enviando handshake...")
+                    com1.sendData(txBuffer)
+                    init_time = time.time()
 
-        # PROJETO 2
-        n = random.randint(5, 15)
-        min_ = round(-1*(10**38), 6)
-        max_ = round(1*(10**38), 6)
+        # Criando os pacotes
+        pk = './imgs/paulo_kogos.jpg'
+        pk_bytes = open(pk, 'rb').read()
+        pk_size = len(pk_bytes)
+        print(f'Tamanho da imagem: {pk_size} bytes')
+
+        payload_list = []
+        payload = []
+        for byte in pk_bytes:
+            if len(payload) < 50:
+                payload.append(byte)
+            else:
+                payload_list.append(payload)
+                payload = []
+                payload.append(byte)
+        payload_list.append(payload)
         
-        txBuffer = [float_to_ieee_754(rounder(random.uniform(min_, max_))) for _ in range(n)]
-        total = sum([ieee_754_to_float(i) for i in txBuffer])
-        print("Soma = {}" .format(total))
-        print("meu array de bytes tem tamanho {}" .format(len(txBuffer)))
-        # faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
+        payload_len = len(payload_list)
+        print(f'Quantidade de pacotes: {payload_len}')
         
+        # Enviando pacotes
+        # Pacotes comecando com 2 sao envios de dados
+        # Pacotes comecando com 1 sao de confirmacao
+        for i, payload in enumerate(payload_list):
+            head = struct.pack('i', 2)
+            head += struct.pack('i', i)
+            head += struct.pack('i', payload_len)
+            head += struct.pack('i', len(payload))
+            head += b'\x00'*8
+            eop = b'\xFF\xFF\xFF'
+            txBuffer = head + payload + eop
+            print(f'Enviando pacote {i}')
+            com1.sendData(txBuffer)
+            time.sleep(0.1)
+        head = b'\x00'*4
 
+        
         #finalmente vamos transmitir os todos. Para isso usamos a funçao sendData que é um método da camada enlace.
         #faça um print para avisar que a transmissão vai começar.
         print("enviando dados ....")
-        # check_byte = b'\x00\x00\x00\x00'
-        stop_byte = b'\xFF\xFF\xFF\xFF'
-        txBuffer.append(stop_byte)
-        time.sleep(2)
-        # com1.sendData(np.asarray(start_byte))
-        # print('Enviando txBuffer: {}'.format(txBuffer))
-        com1.sendData(np.asarray(txBuffer))
+        
         
         
         
@@ -114,30 +134,7 @@ def main():
         # #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
         # #Veja o que faz a funcao do enlaceRX  getBufferLen
 
-        # #acesso aos bytes recebidos
-        init_time = time.time()
-        
-
-        while True:
-            time_elapsed = time.time() - init_time
-            len_rxBuffer = com1.rx.getBufferLen()
-            if len_rxBuffer > 0:
-                rxBuffer, _ = com1.getData(4)
-                sum_received = (ieee_754_to_float(rxBuffer))
-                percent_error = abs((total - sum_received)*100 / total)
-                break
-            if time_elapsed > 5:
-                raise Exception("Tempo esgotado")
-
-        print('--------------------------------------')        
-        print("Soma Recebida {}" .format(sum_received))
-        print("Soma Real {}" .format(total))
-        print('--------------------------------------')
-        if percent_error < 0.01:
-            print("Soma correta")
-            
-        else:
-            print("Soma incorreta")
+        # #acesso aos bytes recebidos        
             
         # # PROJETO 1
         # # f = open(imgW, 'wb')
