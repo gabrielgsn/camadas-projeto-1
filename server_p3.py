@@ -14,21 +14,28 @@ import random
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 serialName = "COM5"                  # Windows(variacao de)
 
-def float_to_ieee_754(float_value):
-    return struct.pack('f', float_value)
+def analisa_Head(head):
+    numeros=""
+    info=[]
+    i=1
+    for byte in head:
+        if i<2:
+            numeros+=str(byte)
+        else:
+            numeros+=str(byte)
+            info.append(int(numeros))
+            numeros=""
+            i=0
+        i+=1
+    return (info)
 
-def ieee_754_to_float(ieee_value):
-    return struct.unpack('f', ieee_value)[0]
-
-def rounder(x):
-    '''
-    Função que arredonda o número x para 6 casas decimais e retorna o número em notação científica
-    '''
-    concat_list = (str(x)).split('e')
-    num = str(round(float(concat_list[0]), 6))
-    exp = concat_list[1]
-    num_complete = float(num + 'e' + exp)
-    return num_complete
+def cria_Head(msg_type, i, payload_len, len_payload):
+    head = msg_type.to_bytes(2, byteorder='big')
+    head += i.to_bytes(2, byteorder='big')
+    head += payload_len.to_bytes(2, byteorder='big')
+    head += len_payload.to_bytes(2, byteorder='big')
+    head += b'\x00'*4
+    return head
 
 def main():
     try:
@@ -92,6 +99,7 @@ def main():
         # #acesso aos bytes recebidos
 
         print('esperando receber handshake')
+        tamanho_do_payload=50
         while True:
             len_rx = com1.rx.getBufferLen()
             if len_rx > 0:
@@ -103,12 +111,70 @@ def main():
         print('handshake devolvido')
         time.sleep(2)
 
+        bytes_imagem=b''
+        contador_de_pacotes=0
+        print("Iniciando recebimento da imagem")
         while True:
             len_rx = com1.rx.getBufferLen()
             if len_rx > 0:
-                rxBuffer, nRx = com1.getData(15)
-                print(f"Código de handshake recebido: {rxBuffer}")
-                break
+                print("Recebendo pacote")
+                rxBuffer, nRx = com1.getData(tamanho_do_payload+15)
+                info=analisa_Head(rxBuffer)
+                tipo_de_mensagem=info[0]
+                numero_do_pacote=info[1]
+                tamanho_da_imagem=info[2]
+                print(f'tipo_de_mensagem {tipo_de_mensagem}')
+                print(f'numero_do_pacote {numero_do_pacote}')
+                print(f'tipo_de_mensagem {tamanho_da_imagem}')
+                print(f'tamanho_do_payload {tamanho_do_payload}')
+
+                if tipo_de_mensagem==2:
+                    if numero_do_pacote==contador_de_pacotes:
+                        info_pacote=12+tamanho_do_payload
+                        eop=rxBuffer[-3:]
+                        if eop==b'\xFF\xFF\xFF':
+                            bytes_imagem+=rxBuffer[12:info_pacote]
+                            print(f"Recebendo pacote {numero_do_pacote}")
+                            print("Mandando confirmação para o cliente")
+                            confirmacao=cria_Head(0, numero_do_pacote, 0, 0)
+                            com1.sendData(confirmacao)
+                            time.sleep(2)
+                            
+                        else:
+                            print("Erro no pacote")
+                            print("Mandando erro para o cliente")
+                            erro=cria_Head(1, numero_do_pacote, 0, 0)
+                            com1.sendData(erro)
+                            time.sleep(2)
+                    else:
+                        print("Pacote fora de ordem")
+                        print("Mandando erro para o cliente")
+                        erro=cria_Head(1, numero_do_pacote, 0, 0)
+                        com1.sendData(erro)
+                        time.sleep(2)
+                else:
+                    print("Tipo de mensagem errada")
+                    print("Mandando erro para o cliente")
+                    erro=cria_Head(1, numero_do_pacote, 0, 0)
+                    com1.sendData(erro)
+                    time.sleep(2)
+
+
+                contador_de_pacotes+=1
+                tamanho_do_payload=info[3]
+                if contador_de_pacotes==tamanho_da_imagem:
+                    print("Imagem recebida com sucesso")
+                    txBuffer=b'\x00'*12
+                    com1.sendData(txBuffer)
+                    break
+        
+        imagem="./imgs/paulo_kogos_copy.jpeg"
+        print(f"Salvando imagem em {imagem}")
+        f=open(imagem, 'wb')
+        f.write(bytes_imagem)
+        f.close()
+        print("Imagem salva com sucesso")
+
 
         print("-------------------------")
         print("Comunicação encerrada")
