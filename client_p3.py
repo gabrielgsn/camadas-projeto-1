@@ -87,6 +87,8 @@ def main():
                     print("Enviando handshake...")
                     com1.sendData(txBuffer)
                     init_time = time.time()
+
+
    # Criando os pacotes
         pk = './imgs/paulo_kogos.jpg'
         pk_bytes = open(pk, 'rb').read()
@@ -106,6 +108,7 @@ def main():
         payload_len = len(payload_list)
         print(f'Quantidade de pacotes: {payload_len}')
         print("Enviando dados ....")
+
         for i, payload in enumerate(payload_list):
             payload_bytes = cria_payload(payload)
             if i+1 < payload_len:
@@ -118,6 +121,8 @@ def main():
             print(f'Enviando pacote {i}')
             com1.sendData(txBuffer)
             time.sleep(0.2)
+            init_time = time.time()
+            
             while True:
                 len_rxBuffer = com1.rx.getBufferLen()
                 if len_rxBuffer > 0:
@@ -136,11 +141,14 @@ def main():
                         print('Todos os pacotes recebidos')
                         print("encerrando comunicação")
                         break
-                    else:
-                        print(f'Pacote {i} perdido')
-                        print(f'Reenviando pacote {i}')
-                        com1.sendData(txBuffer)
-                        time.sleep(0.2)
+                if time.time() - init_time > 5:
+                    print(f'Tempo limite excedido para o pacote {i}')
+                    print(f'Reenviando pacote {i}')
+                    com1.sendData(txBuffer)
+                    time.sleep(0.2)
+                    init_time = time.time()
+
+                
   
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
