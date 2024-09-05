@@ -126,18 +126,15 @@ def main():
             while True:
                 len_rxBuffer = com1.rx.getBufferLen()
                 if len_rxBuffer > 0:
-                    rxBuffer, nRx = com1.getData(12)
-                    confirmacao=cria_Head(0, i, 0, 0)
-                    erro=cria_Head(1, i, 0, 0)
+                    rxBuffer, nRx = com1.getData(15)
+                    confirmacao=cria_Head(0, i, 0, 0)+eop
+                    erro=cria_Head(1, i, 0, 0)+eop
                     if rxBuffer == confirmacao:
                         print(f'Pacote {i} recebido')
                         break
                     elif rxBuffer == erro:
-                        print(f'Erro no pacote {i}')
-                        print(f'Reenviando pacote {i}')
-                        com1.sendData(txBuffer)
-                        time.sleep(0.2)
-                    elif rxBuffer == b'\x00'*12:
+                        raise Exception(f"Encerrando comunicação devido a erro no pacote{i}")
+                    elif rxBuffer == (b'\x00'*12 + eop):
                         print('Todos os pacotes recebidos')
                         print("encerrando comunicação")
                         break

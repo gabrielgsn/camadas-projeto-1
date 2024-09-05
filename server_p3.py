@@ -53,51 +53,6 @@ def main():
         #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
         print("Abriu a comunicação")
         
-        #aqui você deverá gerar os dados a serem transmitidos. 
-        #seus dados a serem transmitidos são um array bytes a serem transmitidos. Gere esta lista com o 
-        #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
-
-        # PROJETO 1
-        # imgR = "./imgs/bmp.jpeg"
-        # imgW = "./imgs/bmp_copy.jpeg"
-
-        # print(f'Abrindo a imagem {imgR}')
-        # print('--'*30)
-
-        # #txBuffer = imagem em bytes!
-        # txBuffer = open(imgR, 'rb').read()
-
-        # PROJETO 2
-        #n = random.randint(5, 15)
-        #min_ = round(-1*(10**38), 6)
-        #max_ = round(1*(10**38), 6)
-        #txBuffer = [float_to_ieee_754(rounder(random.uniform(min_, max_))) for _ in range(n)]
-        #print("meu array de bytes tem tamanho {}" .format(len(txBuffer)))
-        #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
-        
-        #finalmente vamos transmitir os todos. Para isso usamos a funçao sendData que é um método da camada enlace.
-        #faça um print para avisar que a transmissão vai começar.
-        #print("enviando dados ....")
-        #tente entender como o método send funciona!
-        #Cuidado! Apenas trasmita arrays de bytes!
-        
-        #com1.sendData(np.asarray(txBuffer))  #as array apenas como boa pratica para casos de ter uma outra forma de dados
-
-        # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
-        # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
-        #while not com1.tx.threadMutex:
-        #    time.sleep(0.05)
-        #txSize = com1.tx.getStatus()
-        #print('enviou = {}' .format(txSize))
-        
-        #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
-        #Observe o que faz a rotina dentro do thread RX
-        #print um aviso de que a recepção vai começar.
-        # Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
-        # #Veja o que faz a funcao do enlaceRX  getBufferLen
-
-        # #acesso aos bytes recebidos
-
         print('esperando receber handshake')
         tamanho_do_payload=50
         while True:
@@ -113,6 +68,7 @@ def main():
 
         bytes_imagem=b''
         contador_de_pacotes=0
+        eop = b'\xFF\xFF\xFF'
         print("Iniciando recebimento da imagem")
         while True:
             len_rx = com1.rx.getBufferLen()
@@ -136,35 +92,34 @@ def main():
                             bytes_imagem+=rxBuffer[12:info_pacote]
                             print(f"Recebendo pacote {numero_do_pacote}")
                             print("Mandando confirmação para o cliente")
-                            confirmacao=cria_Head(0, numero_do_pacote, 0, 0)
+                            confirmacao=cria_Head(0, numero_do_pacote, 0, 0)+eop
                             com1.sendData(confirmacao)
                             time.sleep(2)
                             
                         else:
                             print("Erro no pacote")
                             print("Mandando erro para o cliente")
-                            erro=cria_Head(1, numero_do_pacote, 0, 0)
+                            erro=cria_Head(1, numero_do_pacote, 0, 0)+eop
                             com1.sendData(erro)
                             time.sleep(2)
                     else:
                         print("Pacote fora de ordem")
                         print("Mandando erro para o cliente")
-                        erro=cria_Head(1, numero_do_pacote, 0, 0)
+                        erro=cria_Head(1, numero_do_pacote, 0, 0)+eop
                         com1.sendData(erro)
                         time.sleep(2)
                 else:
                     print("Tipo de mensagem errada")
                     print("Mandando erro para o cliente")
-                    erro=cria_Head(1, numero_do_pacote, 0, 0)
+                    erro=cria_Head(1, numero_do_pacote, 0, 0)+eop
                     com1.sendData(erro)
                     time.sleep(2)
-
 
                 contador_de_pacotes+=1
                 tamanho_do_payload=info[3]
                 if contador_de_pacotes==tamanho_da_imagem:
                     print("Imagem recebida com sucesso")
-                    txBuffer=b'\x00'*12
+                    txBuffer=b'\x00'*12+eop
                     com1.sendData(txBuffer)
                     break
         
