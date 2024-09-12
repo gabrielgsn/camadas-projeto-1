@@ -90,7 +90,7 @@ def main():
 
 
    # Criando os pacotes
-        pk = './imgs/paulo_kogos.jpg'
+        pk = './imgs/imagem_teste.jpg'
         pk_bytes = open(pk, 'rb').read()
         pk_size = len(pk_bytes)
         print(f'Tamanho da imagem: {pk_size} bytes')
@@ -133,7 +133,7 @@ def main():
                         print(f'Pacote {i} recebido')
                         break
                     elif rxBuffer == erro:
-                        raise Exception(f"Encerrando comunicação devido a erro no pacote{i}")
+                        raise Exception(f"Encerrando comunicação devido a erro no pacote {i}")
                     elif rxBuffer == (b'\x00'*12 + eop):
                         print('Todos os pacotes recebidos')
                         print("encerrando comunicação")
