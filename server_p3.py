@@ -68,12 +68,19 @@ def main():
 
         bytes_imagem=b''
         contador_de_pacotes=0
+        n_pacote_anterior=None
         eop = b'\xFF\xFF\xFF'
         print("Iniciando recebimento da imagem")
+        init_time = time.time()
+        error=False
         while True:
             len_rx = com1.rx.getBufferLen()
             if len_rx > 0:
+                init_time = time.time()
+                recebimento=True
+                print("----------------------------------------------")
                 print("Recebendo pacote")
+                print(f"recebendo dados do pacote{contador_de_pacotes}")
                 rxBuffer, nRx = com1.getData(tamanho_do_payload+15)
                 info=analisa_Head(rxBuffer)
                 tipo_de_mensagem=info[0]
@@ -83,13 +90,18 @@ def main():
                 print(f'numero_do_pacote {numero_do_pacote}')
                 print(f'tipo_de_mensagem {tamanho_da_imagem}')
                 print(f'tamanho_do_payload {tamanho_do_payload}')
-
+                if numero_do_pacote==contador_de_pacotes+1:
+                    if numero_do_pacote-1==n_pacote_anterior:
+                        contador_de_pacotes+=1
+                        error=False
+                        
                 if tipo_de_mensagem==2:
                     if numero_do_pacote==contador_de_pacotes:
                         info_pacote=12+tamanho_do_payload
                         eop=rxBuffer[-3:]
                         if eop==b'\xFF\xFF\xFF':
-                            bytes_imagem+=rxBuffer[12:info_pacote]
+                            if not error:
+                                bytes_imagem+=rxBuffer[12:info_pacote]
                             print(f"Recebendo pacote {numero_do_pacote}")
                             print("Mandando confirmação para o cliente")
                             confirmacao=cria_Head(0, numero_do_pacote, 0, 0)+eop
@@ -114,16 +126,26 @@ def main():
                     erro=cria_Head(1, numero_do_pacote, 0, 0)+eop
                     com1.sendData(erro)
                     time.sleep(2)
-
+                print("----------------------------------------------")
                 contador_de_pacotes+=1
                 tamanho_do_payload=info[3]
+                n_pacote_anterior=numero_do_pacote
+                error=False
                 if contador_de_pacotes==tamanho_da_imagem:
                     print("Imagem recebida com sucesso")
                     txBuffer=b'\x00'*12+eop
                     com1.sendData(txBuffer)
                     break
+
+            if time.time() - init_time > 5:
+                if recebimento:
+                    print(f"confirmação do pacote {contador_de_pacotes -1} não foi recebida")
+                    contador_de_pacotes-=1
+                    recebimento=False
+                    error=True
+                    init_time=time.time()
         
-        imagem="./imgs/paulo_kogos_copy.jpeg"
+        imagem="./imgs/imagem_teste_copy.jpeg"
         print(f"Salvando imagem em {imagem}")
         f=open(imagem, 'wb')
         f.write(bytes_imagem)
