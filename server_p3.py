@@ -1,9 +1,10 @@
 from enlace import *
 import time
 import numpy as np
-import sys
+# import sys
 import struct
 import random
+import crcmod
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
 #   python -m serial.tools.list_ports
@@ -13,6 +14,10 @@ import random
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 serialName = "COM5"                  # Windows(variacao de)
+
+def calculate_crc16(data):
+    func = crcmod.mkCrcFun(0x11021, initCrc=0xFFFF, xorOut=0x0000)
+    return func(data).to_bytes(2, byteorder='big')
 
 def analisa_Head(head):
     numeros=""
@@ -29,12 +34,13 @@ def analisa_Head(head):
         i+=1
     return (info)
 
-def cria_Head(msg_type, i, payload_len, len_payload):
+def cria_Head(msg_type, i, payload_len, len_payload, crc=None):
     head = msg_type.to_bytes(2, byteorder='big')
     head += i.to_bytes(2, byteorder='big')
     head += payload_len.to_bytes(2, byteorder='big')
     head += len_payload.to_bytes(2, byteorder='big')
-    head += b'\x00'*4
+    head +=crc.to_bytes(2, byteorder='big') if crc else b'\x00'*2
+    head += b'\x00'*2
     return head
 
 def main():
@@ -86,10 +92,12 @@ def main():
                 tipo_de_mensagem=info[0]
                 numero_do_pacote=info[1]
                 tamanho_da_imagem=info[2]
+                crc=info[3]
                 print(f'tipo_de_mensagem {tipo_de_mensagem}')
                 print(f'numero_do_pacote {numero_do_pacote}')
                 print(f'tipo_de_mensagem {tamanho_da_imagem}')
                 print(f'tamanho_do_payload {tamanho_do_payload}')
+                print(f"crc = {crc}")
                 if numero_do_pacote==contador_de_pacotes+1:
                     if numero_do_pacote-1==n_pacote_anterior:
                         contador_de_pacotes+=1
@@ -105,6 +113,7 @@ def main():
                             print(f"Recebendo pacote {numero_do_pacote}")
                             print("Mandando confirmação para o cliente")
                             confirmacao=cria_Head(0, numero_do_pacote, 0, 0)+eop
+                            print(confirmacao)
                             com1.sendData(confirmacao)
                             time.sleep(2)
                             
@@ -145,7 +154,7 @@ def main():
                     error=True
                     init_time=time.time()
         
-        imagem="./imgs/imagem_teste_copy.jpeg"
+        imagem="camadas-projeto-1\imgs\imagem_teste_copy.jpg"
         print(f"Salvando imagem em {imagem}")
         f=open(imagem, 'wb')
         f.write(bytes_imagem)
