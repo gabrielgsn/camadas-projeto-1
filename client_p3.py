@@ -16,6 +16,7 @@ import numpy as np
 import sys
 import struct
 import random
+import crcmod
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
 #   python -m serial.tools.list_ports
@@ -24,14 +25,15 @@ import random
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM3"                  # Windows(variacao de)
+serialName = "COM4"                  # Windows(variacao de)
 
-def cria_Head(msg_type, i, payload_len, len_payload):
+def cria_Head(msg_type, i, payload_len, len_payload, payload=None):
     head = msg_type.to_bytes(2, byteorder='big')
     head += i.to_bytes(2, byteorder='big')
     head += payload_len.to_bytes(2, byteorder='big')
     head += len_payload.to_bytes(2, byteorder='big')
-    head += b'\x00'*4
+    head += calculate_crc16(payload).to_bytes(2, byteorder='big') if payload else b'\x00'*2
+    head += b'\x00'*2
     return head
 
 def cria_payload(payload):
@@ -39,6 +41,10 @@ def cria_payload(payload):
     for byte in payload:
         payload_bytes += byte.to_bytes(1, byteorder='big')
     return payload_bytes
+
+def calculate_crc16(data):
+    func = crcmod.mkCrcFun(0x11021, initCrc=0xFFFF, xorOut=0x0000)
+    return func(data)
 
 def main():
     try:
@@ -79,7 +85,7 @@ def main():
                     break
             if time.time() - init_time > 5:
                 continar = input("Servidor inativo. Tentar novamente? (S/N)")
-                if continar == 'N':
+                if continar == 'N' or continar == 'n':
                     print("Encerrando comunicação")
                     com1.disable()
                     sys.exit()
@@ -89,7 +95,7 @@ def main():
                     init_time = time.time()
 
 
-   # Criando os pacotes
+    # Criando os pacotes
         pk = './imgs/imagem_teste.jpg'
         pk_bytes = open(pk, 'rb').read()
         pk_size = len(pk_bytes)
@@ -108,6 +114,7 @@ def main():
         payload_len = len(payload_list)
         print(f'Quantidade de pacotes: {payload_len}')
         print("Enviando dados ....")
+        print('-'*30)
 
         for i, payload in enumerate(payload_list):
             payload_bytes = cria_payload(payload)
@@ -115,10 +122,11 @@ def main():
                 len_payload=len(payload_list[i+1])
             else:
                 len_payload=0
-            head = cria_Head(2, i, payload_len, len_payload)
+            head = cria_Head(2, i, payload_len, len_payload, cria_payload(payload))
+            print("CRC: ", calculate_crc16(cria_payload(payload)))
             eop = b'\xFF\xFF\xFF'
             txBuffer = head + payload_bytes + eop
-            print(f'Enviando pacote {i}')
+            print(f'CLIENT: Enviando pacote {i} \n' + '-'*30)
             com1.sendData(txBuffer)
             time.sleep(0.2)
             init_time = time.time()
@@ -130,7 +138,7 @@ def main():
                     confirmacao=cria_Head(0, i, 0, 0)+eop
                     erro=cria_Head(1, i, 0, 0)+eop
                     if rxBuffer == confirmacao:
-                        print(f'Pacote {i} recebido')
+                        print(f'SERVER: Pacote {i} recebido \n' + '-'*30)
                         break
                     elif rxBuffer == erro:
                         raise Exception(f"Encerrando comunicação devido a erro no pacote {i}")
@@ -145,8 +153,8 @@ def main():
                     time.sleep(0.2)
                     init_time = time.time()
 
-                
-  
+
+
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
         
