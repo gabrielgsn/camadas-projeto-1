@@ -5,6 +5,7 @@ import numpy as np
 import struct
 import random
 import crcmod
+import logging
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
 #   python -m serial.tools.list_ports
@@ -15,6 +16,13 @@ import crcmod
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 serialName = "COM5"                  # Windows(variacao de)
 
+logging.basicConfig(filename='communication_log.txt',  # Name of the log file
+                    level=logging.INFO,                # Log level (INFO for general logging)
+                    format='%(asctime)s - %(message)s')  # Log format (with timestamp)
+
+def log_data(direction, data):
+    """Logs the sent/received data with direction (SEND/RECEIVE)."""
+    logging.info(f"{direction}: {data}")
 def calculate_crc16(data):
     func = crcmod.mkCrcFun(0x11021, initCrc=0xFFFF, xorOut=0x0000)
     return func(data)
@@ -64,6 +72,8 @@ def main():
                 break
         print('devolvendo handshake')
         com1.sendData(np.asarray(rxBuffer))
+        log="5"+str(len(rxBuffer))
+        log_data("recebimento", log)
         print('handshake devolvido')
         time.sleep(2)
 
@@ -110,12 +120,16 @@ def main():
                                 print("Mandando confirmação para o cliente")
                                 confirmacao=cria_Head(0, contador_de_pacotes, 0, 0)+eop
                                 com1.sendData(confirmacao)
+                                log="0"+str(len(rxBuffer))
+                                log_data("recebimento", log)
                                 time.sleep(1)
                             else:
                                 print("Erro no pacote devido ao crc")
                                 print("Mandando erro para o cliente")
                                 erro=cria_Head(1, contador_de_pacotes, 0, 0)+eop
                                 com1.sendData(erro)
+                                log="1"+str(len(rxBuffer))
+                                log_data("recebimento", log)
                                 time.sleep(1)
                                 contador_de_pacotes-=1
                         else:
@@ -123,6 +137,8 @@ def main():
                             print("Mandando erro para o cliente")
                             erro=cria_Head(1, contador_de_pacotes, 0, 0)+eop
                             com1.sendData(erro)
+                            log="1"+str(len(rxBuffer))
+                            log_data("recebimento", log)
                             time.sleep(1)
                             contador_de_pacotes-=1
                     else:
@@ -130,6 +146,8 @@ def main():
                         print("Mandando erro para o cliente")
                         erro=cria_Head(1, contador_de_pacotes, 0, 0)+eop
                         com1.sendData(erro)
+                        log="1"+str(len(rxBuffer))
+                        log_data("recebimento", log)
                         time.sleep(1)
                         contador_de_pacotes-=1
                 else:
@@ -137,6 +155,8 @@ def main():
                     print("Mandando erro para o cliente")
                     erro=cria_Head(1, contador_de_pacotes, 0, 0)+eop
                     com1.sendData(erro)
+                    log="1"+str(len(rxBuffer))
+                    log_data("recebimento", log)
                     time.sleep(1)
                     contador_de_pacotes-=1
 
@@ -148,6 +168,8 @@ def main():
                     print("Imagem recebida com sucesso")
                     txBuffer=b'\x00'*12+eop
                     com1.sendData(txBuffer)
+                    log="4"+str(len(rxBuffer))
+                    log_data("recebimento", log)
                     break
 
             if time.time() - init_time > 5  :

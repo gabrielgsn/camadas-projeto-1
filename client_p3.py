@@ -17,6 +17,7 @@ import sys
 import struct
 import random
 import crcmod
+import logging
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
 #   python -m serial.tools.list_ports
@@ -35,6 +36,14 @@ def cria_Head(msg_type, i, payload_len, len_payload, payload=None):
     head += calculate_crc16(payload).to_bytes(2, byteorder='big') if payload else b'\x00'*2
     head += b'\x00'*2
     return head
+
+logging.basicConfig(filename='communication_log.txt',  # Name of the log file
+                    level=logging.INFO,                # Log level (INFO for general logging)
+                    format='%(asctime)s - %(message)s')  # Log format (with timestamp)
+
+def log_data(direction, data):
+    """Logs the sent/received data with direction (SEND/RECEIVE)."""
+    logging.info(f"{direction}: {data}")
 
 def cria_payload(payload):
     payload_bytes = b''
@@ -74,6 +83,8 @@ def main():
         txBuffer = head + eop
         print("Enviando handshake...")
         com1.sendData(txBuffer)
+        log="5"+str(len(txBuffer))
+        log_data("envio", log)
 
         init_time = time.time()
         while True:
@@ -92,11 +103,13 @@ def main():
                 else:
                     print("Enviando handshake...")
                     com1.sendData(txBuffer)
+                    log="5"+str(len(txBuffer))
+                    log_data("envio", log)
                     init_time = time.time()
 
 
     # Criando os pacotes
-        pk = './imgs/imagem_teste.jpg'
+        pk = "camadas-projeto-1\imgs\imagem_teste.jpg"
         pk_bytes = open(pk, 'rb').read()
         pk_size = len(pk_bytes)
         print(f'Tamanho da imagem: {pk_size} bytes')
@@ -138,6 +151,8 @@ def main():
             eop = b'\xFF\xFF\xFF'
             txBuffer = head + payload_bytes + eop
             print(f'CLIENT: Enviando pacote {i} \n' + '-'*30)
+            log=str(2)+str(len(txBuffer))+str(i)+str(len_payload)+str(calculate_crc16(cria_payload(payload)))
+            log_data("envio",log)
             com1.sendData(txBuffer)
             time.sleep(0.2)
             init_time = time.time()
