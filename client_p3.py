@@ -109,7 +109,7 @@ def main():
 
 
     # Criando os pacotes
-        pk = "camadas-projeto-1\imgs\imagem_teste.jpg"
+        pk = "imgs\imagem_teste.jpg"
         pk_bytes = open(pk, 'rb').read()
         pk_size = len(pk_bytes)
         print(f'Tamanho da imagem: {pk_size} bytes')
@@ -151,7 +151,7 @@ def main():
             eop = b'\xFF\xFF\xFF'
             txBuffer = head + payload_bytes + eop
             print(f'CLIENT: Enviando pacote {i} \n' + '-'*30)
-            log=str(2)+str(len(txBuffer))+str(i)+str(len_payload)+str(calculate_crc16(cria_payload(payload)))
+            log=str(2)+ ' ' +str(len(txBuffer))+ ' ' +str(i)+ ' ' +str(len_payload)+ ' ' +str(calculate_crc16(cria_payload(payload)))
             log_data("envio",log)
             com1.sendData(txBuffer)
             time.sleep(0.2)
