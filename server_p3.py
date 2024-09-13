@@ -69,7 +69,6 @@ def main():
 
         bytes_imagem=b''
         contador_de_pacotes=0
-        # n_pacote_anterior=None
         eop = b'\xFF\xFF\xFF'
         print("Iniciando recebimento da imagem")
         init_time = time.time()
@@ -89,66 +88,61 @@ def main():
                 numero_do_pacote=info[1]
                 tamanho_da_imagem=info[2]
                 crc=info[4]
-                print(f'tipo_de_mensagem {tipo_de_mensagem}')
+                print(f"esperando receber o pacote de numero {contador_de_pacotes}")
+                # print(f'tipo_de_mensagem {tipo_de_mensagem}')
                 print(f'numero_do_pacote {numero_do_pacote}')
-                print(f'tipo_de_mensagem {tamanho_da_imagem}')
-                print(f'tamanho_do_payload {tamanho_do_payload}')
+                # print(f'tipo_de_mensagem {tamanho_da_imagem}')
+                # print(f'tamanho_do_payload {tamanho_do_payload}')
                 print(f"crc = {crc}")
-                # if numero_do_pacote==contador_de_pacotes+1:
-                #     if numero_do_pacote-1==n_pacote_anterior:
-                #         contador_de_pacotes+=1
-                #         error=False
-                        
+
                 if tipo_de_mensagem==2:
                     if numero_do_pacote==contador_de_pacotes:
                         info_pacote=12+tamanho_do_payload
                         eop=rxBuffer[-3:]
                         if eop==b'\xFF\xFF\xFF':
+                            payload=rxBuffer[12:info_pacote]
+                            crc_calculado=calculate_crc16(payload)
                             if not error:
-                                payload=rxBuffer[12:info_pacote]
                                 bytes_imagem+=payload
-                                crc_calculado=calculate_crc16(payload)
-                                print(f"crc calculado foi {crc_calculado}")
-                                if crc_calculado==crc:
-                                    print(f"Recebendo pacote {numero_do_pacote}")
-                                    print("Mandando confirmação para o cliente")
-                                    confirmacao=cria_Head(0, numero_do_pacote, 0, 0)+eop
-                                    print(confirmacao)
-                                    com1.sendData(confirmacao)
-                                    time.sleep(0.5)
-                                else:
-                                    print("Erro no pacote devido ao crc")
-                                    print("Mandando erro para o cliente")
-                                    erro=cria_Head(1, numero_do_pacote, 0, 0)+eop
-                                    com1.sendData(erro)
-                                    time.sleep(0.5)
-                                    contador_de_pacotes-=1
+                            print(f"crc calculado foi {crc_calculado}")
+                            if crc_calculado==crc:
+                                print(f"Recebendo pacote {numero_do_pacote}")
+                                print("Mandando confirmação para o cliente")
+                                confirmacao=cria_Head(0, contador_de_pacotes, 0, 0)+eop
+                                com1.sendData(confirmacao)
+                                time.sleep(1)
+                            else:
+                                print("Erro no pacote devido ao crc")
+                                print("Mandando erro para o cliente")
+                                erro=cria_Head(1, contador_de_pacotes, 0, 0)+eop
+                                com1.sendData(erro)
+                                time.sleep(1)
+                                contador_de_pacotes-=1
                         else:
                             print("Erro no pacote")
                             print("Mandando erro para o cliente")
-                            erro=cria_Head(1, numero_do_pacote, 0, 0)+eop
+                            erro=cria_Head(1, contador_de_pacotes, 0, 0)+eop
                             com1.sendData(erro)
-                            time.sleep(0.5)
+                            time.sleep(1)
                             contador_de_pacotes-=1
                     else:
                         print("Pacote fora de ordem")
                         print("Mandando erro para o cliente")
-                        erro=cria_Head(1, numero_do_pacote, 0, 0)+eop
+                        erro=cria_Head(1, contador_de_pacotes, 0, 0)+eop
                         com1.sendData(erro)
-                        time.sleep(0.5)
+                        time.sleep(1)
                         contador_de_pacotes-=1
                 else:
                     print("Tipo de mensagem errada")
                     print("Mandando erro para o cliente")
-                    erro=cria_Head(1, numero_do_pacote, 0, 0)+eop
+                    erro=cria_Head(1, contador_de_pacotes, 0, 0)+eop
                     com1.sendData(erro)
-                    time.sleep(0.5)
+                    time.sleep(1)
                     contador_de_pacotes-=1
 
                 print("----------------------------------------------")
                 contador_de_pacotes+=1
                 tamanho_do_payload=info[3]
-                # n_pacote_anterior=numero_do_pacote
                 error=False
                 if contador_de_pacotes==tamanho_da_imagem:
                     print("Imagem recebida com sucesso")

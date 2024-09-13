@@ -115,14 +115,25 @@ def main():
         print(f'Quantidade de pacotes: {payload_len}')
         print("Enviando dados ....")
         print('-'*30)
-
+#TESTE DE ERRO-------------------------------------------
+        teste_de_erro_crc=True
+        teste_de_erro_n=False
+#TESTE DE ERRO-------------------------------------------
         for i, payload in enumerate(payload_list):
             payload_bytes = cria_payload(payload)
             if i+1 < payload_len:
                 len_payload=len(payload_list[i+1])
             else:
                 len_payload=0
-            head = cria_Head(2, i, payload_len, len_payload, cria_payload(payload))
+            if teste_de_erro_crc:
+                head = cria_Head(2, i, payload_len, len_payload)
+                teste_de_erro_crc=False
+                teste_de_erro_n=True
+            elif teste_de_erro_n:
+                head = cria_Head(2, 30, payload_len, len_payload, cria_payload(payload))
+                teste_de_erro_n=False
+            else:
+                head = cria_Head(2, i, payload_len, len_payload, cria_payload(payload))
             print("CRC: ", calculate_crc16(cria_payload(payload)))
             eop = b'\xFF\xFF\xFF'
             txBuffer = head + payload_bytes + eop
@@ -141,7 +152,14 @@ def main():
                         print(f'SERVER: Pacote {i} recebido \n' + '-'*30)
                         break
                     elif rxBuffer == erro:
-                        raise Exception(f"Encerrando comunicação devido a erro no pacote {i}")
+                        print(f"erro de pacote foi recebido, reenviando pacote de numero {i}")
+                    # TESTE DE ERRO-----------------------------------------------------------------
+                        head = cria_Head(2, i, payload_len, len_payload, cria_payload(payload))
+                        txBuffer = head + payload_bytes + eop
+                    # TESTE DE ERRO-----------------------------------------------------------------
+                        com1.sendData(txBuffer)
+                        init_time=time.time()
+                        # raise Exception(f"Encerrando comunicação devido a erro no pacote {i}")
                     elif rxBuffer == (b'\x00'*12 + eop):
                         print('Todos os pacotes recebidos')
                         print("encerrando comunicação")
