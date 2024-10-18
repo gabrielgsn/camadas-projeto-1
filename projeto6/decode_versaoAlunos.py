@@ -80,10 +80,14 @@ def main():
     #Provavelmente, se tudo deu certo, 2 picos serao PRÓXIMOS aos valores da tabela. Os demais serão picos de ruídos.
 
     # Identificar os picos na Transformada de Fourier
-    indexes = peakutils.indexes(yf, thres=0.2, min_dist=50)
+    indexes = peakutils.indexes(yf, thres=0.05, min_dist=30)
     freqs_de_pico = xf[indexes]
     
     #printe os picos encontrados! 
+    if len(indexes) < 5:
+        print(f"Menos de 5 picos identificados ({len(indexes)} picos), ajustando parâmetros.")
+        # Ajusta os parâmetros novamente para detectar mais picos, se necessário
+        indexes = peakutils.indexes(yf, thres=0.02, min_dist=20)
 
     print("Frequências identificadas nos picos: ", freqs_de_pico)
 

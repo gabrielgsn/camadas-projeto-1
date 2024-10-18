@@ -78,7 +78,7 @@ def main():
 
     print("Tecla digitada: {}".format(tecla))
 
-    sinal, t = gerar_sinal_dtmf(str(tecla))
+    sinal, t = gerar_sinal_dtmf(str(tecla), duration=3)
 
     print("Gerando Tons base")
     print("Sinal gerado com sucesso")
