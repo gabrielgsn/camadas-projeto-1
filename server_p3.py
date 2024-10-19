@@ -14,7 +14,7 @@ import logging
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM4"                  # Windows(variacao de)
+serialName = "COM3"                  # Windows(variacao de)
 
 logging.basicConfig(filename='communication_log.txt',  # Name of the log file
                     level=logging.INFO,                # Log level (INFO for general logging)
@@ -99,10 +99,10 @@ def main():
                 tamanho_da_imagem=info[2]
                 crc=info[4]
                 print(f"esperando receber o pacote de numero {contador_de_pacotes}")
-                # print(f'tipo_de_mensagem {tipo_de_mensagem}')
+                print(f'tipo_de_mensagem {tipo_de_mensagem}')
                 print(f'numero_do_pacote {numero_do_pacote}')
-                # print(f'tipo_de_mensagem {tamanho_da_imagem}')
-                # print(f'tamanho_do_payload {tamanho_do_payload}')
+                print(f'tipo_de_mensagem {tamanho_da_imagem}')
+                print(f'tamanho_do_payload {tamanho_do_payload}')
                 print(f"crc = {crc}")
 
                 if tipo_de_mensagem==2:
@@ -116,7 +116,6 @@ def main():
                                 bytes_imagem+=payload
                             print(f"crc calculado foi {crc_calculado}")
                             if crc_calculado==crc:
-                                print(f"Recebendo pacote {numero_do_pacote}")
                                 print("Mandando confirmação para o cliente")
                                 confirmacao=cria_Head(0, contador_de_pacotes, 0, 0)+eop
                                 com1.sendData(confirmacao)
@@ -180,7 +179,7 @@ def main():
                     error=True
                     init_time=time.time()
         
-        imagem="imgs\imagem_teste_copy.jpg"
+        imagem="camadas-projeto-1\imgs\imagem_teste_copy.jpg"
         print(f"Salvando imagem em {imagem}")
         f=open(imagem, 'wb')
         f.write(bytes_imagem)
