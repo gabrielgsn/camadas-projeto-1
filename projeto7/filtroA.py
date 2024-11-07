@@ -33,6 +33,7 @@ sd.wait()
 print("Gravacao finalizada")
 
 audio = audio[:, 0]
+audio = np.random.normal(0,1,44100*3)
 xf, yf = signal.calcFFT(audio, fs) 
 saida = butter_lowpass_filter(audio, f_corte, fs, order)
 xf2, yf2 = signal.calcFFT(saida, fs)

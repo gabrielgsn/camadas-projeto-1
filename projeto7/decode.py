@@ -33,11 +33,10 @@ def main():
     print("Gravação finalizada")
 
     audio = audio[:, 0]
-
+    audio = np.random.normal(0,1,44100*3)
 
     xf, yf = signal.calcFFT(audio, freqDeAmostragem)
 
-    audio
     saida = [0, 0]
     for i in range(len(audio)):
         if i < 2:
