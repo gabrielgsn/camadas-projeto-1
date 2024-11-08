@@ -88,9 +88,11 @@ plt.xlabel('Frequência (Hz)')
 plt.ylabel('Magnitude')
 plt.show()
 
-# Normalizando o audio modulado
+# Salvando o audio modulado
+wavfile.write('audio/audio_diddy_modulado.wav', samplerate, audio_modulado.astype(np.int16))
 
-audio_modulado_normalizado = audio_modulado * max(abs(audio_modulado))
+# Normalizando o audio modulado
+audio_modulado_normalizado = audio_modulado / max(abs(audio_modulado))
 wavfile.write('audio/audio_diddy_modulado_normalizado.wav', samplerate, audio_modulado_normalizado.astype(np.int16))
 
 
