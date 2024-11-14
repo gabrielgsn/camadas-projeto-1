@@ -60,8 +60,6 @@ plt.show()
 # Tocar o som filtrado
 
 wavfile.write('audio/audio_diddy_filtrado.wav', samplerate, audio_filtrado.astype(np.int16))
-# sd.play(audio_filtrado)
-# time.sleep(5)
 
 # Modulando a funcao
 
